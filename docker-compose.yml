@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  php:
+    build: ./.docker/php
+    container_name: tools_php-php
+    environment:
+      - MYSQL_HOST=mysql
+      - MYSQL_DATABASE=laravel
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=pass
+    restart: unless-stopped
+    working_dir: /var/www/
+    volumes:
+      - ./:/var/www
+    depends_on:
+      - mysql
+    networks:
+      - tools_php-network
+
+  nginx:
+    image: nginx
+    container_name: tools_php-nginx
+    restart: unless-stopped
+    ports:
+      - 80:80
+    volumes:
+      - ./:/var/www
+      - ./.docker/nginx:/etc/nginx/conf.d
+    depends_on:
+      - php
+    networks:
+      - tools_php-network
+
+  mysql:
+    image: mysql
+    container_name: tools_php-mysql
+    restart: unless-stopped
+    environment:
+      - MYSQL_ROOT_PASSWORD=pass
+    volumes:
+      - mysql_php:/mysql.sql
+      - db_volume:/var/lib/mysql
+    networks:
+      - tools_php-network
+
+  phpmyadmin:
+    image: phpmyadmin
+    container_name: tools_php-phpmyadmin
+    restart: unless-stopped
+    environment:
+      - PMA_ARBITRARY=1
+      - UPLOAD_LIMIT=1024M
+      - MEMORY_LIMIT=1024M
+      - MAX_EXECUTION_TIME=300
+    ports:
+      - 8000:80
+    depends_on:
+      - mysql
+    networks:
+      - tools_php-network
+
+volumes:
+  mysql_php:
+
+networks:
+  tools_php-network:
+    driver: bridge
